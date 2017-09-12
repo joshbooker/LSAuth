@@ -48,9 +48,29 @@
     <script type="text/javascript" src="Scripts/Generated/resources.js"></script>
     <script type="text/javascript" src="Scripts/msls-2.5.4.min.js"></script>
     <script type="text/javascript" src="Scripts/Generated/generatedAssets.js"></script>
+
+    <!-- This app uses cdn to reference msal.js (recommended).
+    You can also download it from: https://github.com/AzureAD/microsoft-authentication-library-for-js -->
+    <script src="//secure.aadcdn.microsoftonline-p.com/lib/0.1.1/js/msal.min.js"></script>
+    <!--<script type="text/javascript" src="msal.js"></script>-->
+    <script type="text/javascript" src="Scripts/msalconfig.js"></script>
+    <script type="text/javascript" src="Scripts/jab-msgrpaphapi-1.0.0.js"></script>
+
+    <!-- The 'bluebird' and 'fetch' references below are required if you need to run this application on Internet Explorer -->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/bluebird/3.3.4/bluebird.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/fetch/2.0.3/fetch.min.js"></script>
+
+
     <script type="text/javascript">
         $(document).ready(function () {
             msls._run()
+            .then(function ()
+            {
+                //var user = myGraph.userAgentApplication.getUser();
+                //if (user) {
+                    //myGraph.callGraphApi2();
+                //}
+            })
             .then(null, function failure(error) {
                 alert(error);
             });
