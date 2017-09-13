@@ -1,4 +1,5 @@
 ﻿var msalconfig = {
+    graphUsersEndpoint: "https://graph.microsoft.com/v1.0/users",
     graphInvitationEndpoint: "https://graph.microsoft.com/beta/invitations",
     graphGroupMembersEndpoint: "https://graph.microsoft.com/v1.0/groups/{groupId}/members/$ref",
     graphAPIScopes: ["https://graph.microsoft.com/.default"],

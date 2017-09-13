@@ -4,22 +4,9 @@
     addUser(name)
     addGroupMember(groupId, userId)
     inviteUser(name, email)
-    getToken()
     callGraphApi(token, endpoint, method, body, options)
+    getToken()
     */
-
-    //function getToken() {
-    //return new Promise((resolve, reject) => {
-    //    const authContext = new adal.AuthenticationContext(`https://login.microsoftonline.com/${TENANT}`);
-    //    authContext.acquireTokenWithClientCredentials(GRAPH_URL, CLIENT_ID, CLIENT_SECRET, (err, tokenRes) => {
-    //        if (err) {
-    //            reject(err);
-    //        }
-    //        var accesstoken = tokenRes.accessToken;
-    //        resolve(accesstoken);
-    //    });
-    //});
-//}
 
     var myGraph = window.graph || {};
 
@@ -70,6 +57,77 @@ myGraph.callGraphApi2 = function callGraphApi2() {
                             });
 
 }
+/*
+POST https://graph.microsoft.com/v1.0/users
+Content-type: application/json
+
+{
+    "accountEnabled": true,
+    "displayName": "displayName-value",
+    "mailNickname": "mailNickname-value",
+    "userPrincipalName": "upn-value@tenant-value.onmicrosoft.com",
+    "passwordProfile" : {
+        "forceChangePasswordNextSignIn": true,
+        "password": "password-value"
+    }
+}
+*/
+
+    /*
+    * Add Internal User.
+    * 
+    * @param {any} displayName - displayName
+    * @param {any} userPrincipalName - userPrincipalName
+    * @param {any} mailNickname - mailNickname
+    * @param {any} forceChangePasswordNextSignIn - forceChangePasswordNextSignIn
+    * @param {any} password - password
+    * @param {any} accountEnabled - accountEnabled
+    */
+var addUser = function addUser(displayName, userPrincipalName, mailNickname, forceChangePasswordNextSignIn, password, accountEnabled) {
+    var body = {
+        "accountEnabled": accountEnabled,
+        "displayName": displayName,
+        "mailNickname": mailNickname,
+        "userPrincipalName": userPrincipalName,
+        "passwordProfile": {
+            "forceChangePasswordNextSignIn": forceChangePasswordNextSignIn,
+            "password": password
+        }
+    };
+    return callGraphApi(msalconfig.graphUsersEndpoint, "POST", body)
+            .then(function (response) {
+                //console.log("inviteUser Response: " + response);
+                var contentType = response.headers.get("content-type");
+                if ((response.status === 200 || response.status === 201) && contentType && contentType.indexOf("application/json") !== -1) {
+                    return response.json()
+                        .then(function (data) {
+                            //console.log(data);
+                            console.log("User added: " + data.displayName)
+                            return data;
+                        })
+                        .catch(function (error) {
+                            console.log("addUser json Error: " + error);
+                            return error;
+                        });
+                } else {
+                    return response.json()
+                        .then(function (data) {
+                            console.log("addUser Failed: " + response);
+                            return data;
+                        })
+                        .catch(function (error) {
+                            console.log("addUser json2 Error: " + error);
+                            return error;
+                        });
+                }
+            })
+            .catch(function (error) {
+                console.log("addUser Error: " + error);
+                return error;
+            });
+}
+myGraph.addUser = addUser;
+
 
     /*
     * Invite an External User.
@@ -105,7 +163,7 @@ var inviteUser = function inviteUser(invitedUserDisplayName, invitedUserEmailAdd
                 if ((response.status === 200 || response.status === 201) && contentType && contentType.indexOf("application/json") !== -1) {
                     return response.json()
                         .then(function (data) {
-                            console.log(data);
+                            //console.log(data);
                             console.log("Invitation Sent to " + data.invitedUserEmailAddress)
                             return data;
                         })
@@ -148,14 +206,15 @@ var addGroupMember = function addGroupMember(groupId, userId) {
                 if ((response.status === 204)) {
                     //responseElement.innerHTML += "User Added to Group";
                     console.log("User Added to Group");
-                    return true;
+                    return Promise.resolve(true);
                 } else {
-                    response.json()
+                    return response.json()
                         .then(function (data) {
                             if (response.status === 400 && data.error.message === "One or more added object references already exist for the following modified properties: 'members'.") {
                                 //responseElement.innerHTML += "User Already in Group";
                                 console.log("User Already in Group");
-                                return data;
+                                //return data;
+                                return Promise.resolve(true); //returns true if user already in group
                             } else {
                                 console.log("Add Member Failed:" + response);
                                 return data;
