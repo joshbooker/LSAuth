@@ -6,6 +6,9 @@
     inviteUser(name, email)
     callGraphApi(token, endpoint, method, body, options)
     getToken()
+    isLoggedIn()
+    login()
+    logout()
     */
 
     /*
