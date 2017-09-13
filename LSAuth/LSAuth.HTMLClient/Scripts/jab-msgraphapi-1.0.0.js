@@ -109,7 +109,7 @@ var addUser = function addUser(displayName, userPrincipalName, mailNickname, for
                             console.log("addUser json Error: " + error);
                             return error;
                         });
-                } else {                //TO DO : 400 error handling ie: password complexity response, etc. "Another object with the same value for property userPrincipalName already exists."
+                } else {
                     return response.json()
                         .then(function (data) {
                             console.log("addUser Failed: " + response);
@@ -171,7 +171,7 @@ var inviteUser = function inviteUser(invitedUserDisplayName, invitedUserEmailAdd
                             console.log("inviteUser json Error: " + error);
                             return error;
                         });
-                } else {                                                        //TO DO: handle 400 response "Invitee is in inviter tenant"
+                } else {
                     return response.json()
                         .then(function (data) {
                             console.log("Invitation Failed: " + response);
@@ -209,7 +209,7 @@ var addGroupMember = function addGroupMember(groupId, userId) {
                     return Promise.resolve(true);
                 } else {
                     return response.json()
-                        .then(function (data) {             //TO DO: handle more 400 responses ie: Resource 'xxx' does not exist or one of its queried reference-property objects are not present.
+                        .then(function (data) {
                             if (response.status === 400 && data.error.message === "One or more added object references already exist for the following modified properties: 'members'.") {
                                 //responseElement.innerHTML += "User Already in Group";
                                 console.log("User Already in Group");
