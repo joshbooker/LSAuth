@@ -12,3 +12,11 @@
     redirectUri: location.origin,
     groupId: "c3346f2f-94d5-401a-afb1-9ad77616d79f"
 };
+
+/*
+addUser(name)
+addGroupMember(groupId, userId)
+inviteUser(name, email)
+getTokenThenCall(callback)
+callGraphApi(token, endpoint, method, body, options)
+*/
