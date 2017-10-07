@@ -12,7 +12,6 @@ myapp.BrowseUsers.Invite_execute = function (screen) {
     //    }
     //});
     var inviteRedeemUrl = "";
-
     //this will invite an external user then add the user as a member of the externals group
     myGraph.inviteUser("JoshTest",
                             "jbooker@midcoast.com",
@@ -39,6 +38,28 @@ myapp.BrowseUsers.Invite_execute = function (screen) {
                     }
                 });
         });
+};
+myapp.BrowseUsers.sendMail_execute = function (screen) {
+    // Write code here.
+    myGraph.sendMail("TestSubject",
+                        "text",
+                        "TEST BODY HERE",
+                        "jbooker@midcoast.com",
+                        "josh@joshbooker.com",
+                        "true")
+        //sendMail returns true on success and error response object on failure
+        .then(function (result) {
+            //
+            if (result === true) {
+                alert("sendMail Success!")
+            } else {
+                alert("sendMail Failed: " + result.error.message)
+            }
+        });
+};
+myapp.BrowseUsers.sendMail_canExecute = function (screen) {
+    //this hides the sendMail button when the user is not logged in
+    return myGraph.isLoggedIn();
 };
 myapp.BrowseUsers.Invite_canExecute = function (screen) {
     //this hides the Invite button when the user is not logged in

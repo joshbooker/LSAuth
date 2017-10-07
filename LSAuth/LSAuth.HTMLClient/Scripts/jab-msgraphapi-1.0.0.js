@@ -15,7 +15,7 @@
     TO DO:
         --handle more 400 response errors ie:  Invitee in Invited Tenant; Resource not Found; Password complexity error
     */
-    var myGraph = window.graph || {};
+    var myGraph = window.myGraph || {};
 
     // AMD support
     if (typeof define === 'function' && define.amd) {
@@ -34,7 +34,7 @@
 var graphApiEndpoint = "https://graph.microsoft.com/v1.0/me";
 
 //admin consent endpoint example
-//https://login.microsoftonline.com/common/adminconsent?client_id=39683401-a60c-4bc6-b744-6dbaedef498d&state=12345&redirect_uri=http://localhost:30662/
+//https://login.microsoftonline.com/common/adminconsent?client_id=39683401-a60c-4bc6-b744-6dbaedef498d&state=12345&redirect_uri=http://localhost:57245/
 
 // Graph API scope used to obtain the access token to read user profile
 var graphAPIScopes = ["https://graph.microsoft.com/user.read"];
@@ -64,6 +64,105 @@ myGraph.testCall = function callGraphApi2() {
                 });
     return result;
 }
+    /*
+POST https://graph.microsoft.com/beta/me/sendMail
+Content-type: application/json
+Content-length: 512
+
+{
+  "message": {
+    "subject": "Meet for lunch?",
+    "body": {
+      "contentType": "Text",
+      "content": "The new cafeteria is open."
+    },
+    "toRecipients": [
+      {
+        "emailAddress": {
+          "address": "samanthab@contoso.onmicrosoft.com"
+        }
+      }
+    ],
+    "ccRecipients": [
+      {
+        "emailAddress": {
+          "address": "danas@contoso.onmicrosoft.com"
+        }
+      }
+    ]
+  },
+  "saveToSentItems": "false"
+}
+
+*/
+
+
+    /*
+    * Add Internal User.
+    * 
+    * @param {any} displayName - displayName
+    * @param {any} userPrincipalName - userPrincipalName
+    * @param {any} mailNickname - mailNickname
+    * @param {any} forceChangePasswordNextSignIn - forceChangePasswordNextSignIn
+    * @param {any} password - password
+    * @param {any} accountEnabled - accountEnabled
+    */
+var sendMail = function sendMail(subject, bodyContentType, bodyContent, toRecipientEmail, ccRecipientEmail, saveToSentItems) {
+    var body = {
+        "message": {
+            "subject": subject,
+            "body": {
+                "contentType": bodyContentType,
+                "content": bodyContent
+            },
+            "toRecipients": [
+              {
+                  "emailAddress": {
+                      "address": toRecipientEmail
+                  }
+              }
+            ],
+            "ccRecipients": [
+              {
+                  "emailAddress": {
+                      "address": ccRecipientEmail
+                  }
+              }
+            ]
+        },
+        "saveToSentItems": saveToSentItems
+    };
+    return callGraphApi(msalconfig.graphMeEndpoint, "POST", body)
+            .then(function (response) {
+                var contentType = response.headers.get("content-type");
+                if ((response.status === 202)) {
+                    console.log("Email Sent Successfully");
+                    return Promise.resolve(true);  // no reponse data so return resolved promise
+                } else {
+                    return response.json()
+                        .then(function (data) {
+                            if (response.status === 400 && data.error.message === "<possible sendMail specific error code to handle here>") {
+                                console.log("some email error message");
+                                //return data;
+                                return Promise.resolve(true); //returns true if user already in group
+                            } else {
+                                console.log("Send Mail Failed: " + data.error.message);
+                                return data;
+                            }
+                        })
+                        .catch(function (error) {
+                            console.log("Send Mail json Failed: " + error.message);
+                            return error;
+                        });
+                }
+            })
+            .catch(function (error) {
+                console.log("sendMail Error: " + error.message);
+                return error;
+            });
+}
+myGraph.sendMail = sendMail;
+
 
 /*
 POST https://graph.microsoft.com/v1.0/users

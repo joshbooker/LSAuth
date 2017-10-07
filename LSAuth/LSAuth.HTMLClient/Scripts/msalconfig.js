@@ -1,4 +1,5 @@
 ﻿var msalconfig = {
+    graphMeEndpoint: "https://graph.microsoft.com/beta/me/sendMail",
     graphUsersEndpoint: "https://graph.microsoft.com/v1.0/users",
     graphInvitationEndpoint: "https://graph.microsoft.com/beta/invitations",
     graphGroupMembersEndpoint: "https://graph.microsoft.com/v1.0/groups/{groupId}/members/$ref",
