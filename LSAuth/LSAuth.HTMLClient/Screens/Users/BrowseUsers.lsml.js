@@ -39,14 +39,16 @@ myapp.BrowseUsers.Invite_execute = function (screen) {
                 });
         });
 };
+
 myapp.BrowseUsers.sendMail_execute = function (screen) {
     // Write code here.
-    myGraph.sendMail("TestSubject",
+    myGraph.sendMailServer("TestSubject",
                         "text",
                         "TEST BODY HERE",
                         "jbooker@midcoast.com",
                         "josh@joshbooker.com",
-                        "true")
+                        "true",
+                        "amanda@joshbooker.com")
         //sendMail returns true on success and error response object on failure
         .then(function (result) {
             //
@@ -59,7 +61,8 @@ myapp.BrowseUsers.sendMail_execute = function (screen) {
 };
 myapp.BrowseUsers.sendMail_canExecute = function (screen) {
     //this hides the sendMail button when the user is not logged in
-    return myGraph.isLoggedIn();
+    //return myGraph.isLoggedIn();
+    return true;
 };
 myapp.BrowseUsers.Invite_canExecute = function (screen) {
     //this hides the Invite button when the user is not logged in
@@ -77,6 +80,12 @@ myapp.BrowseUsers.Login_execute = function (screen) {
     //this is descructive as the page will redirect to the home page of this app
     //we could use query strings to save state, etc
     myGraph.login();
+    //myGraph.getAppToken()
+    //      .then(function (token) {
+    //            alert(token);
+    //        }, function (err) {
+    //            alert(err);
+    //        });
 };
 myapp.BrowseUsers.Logout_canExecute = function (screen) {
     //this hides the Logout button when the use not yet logged in

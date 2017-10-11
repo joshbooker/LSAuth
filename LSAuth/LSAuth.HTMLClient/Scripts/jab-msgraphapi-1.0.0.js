@@ -1,4 +1,6 @@
-﻿(function (window, undefined) {
+﻿/// <reference path="adal.js" />
+/// <reference path="msal.js" />
+(function (window, undefined) {
 
     /*
     addUser(name)
@@ -33,17 +35,26 @@
 // Graph API endpoint to show user profile
 var graphApiEndpoint = "https://graph.microsoft.com/v1.0/me";
 
-//admin consent endpoint example
-//https://login.microsoftonline.com/common/adminconsent?client_id=39683401-a60c-4bc6-b744-6dbaedef498d&state=12345&redirect_uri=http://localhost:57245/
+    //admin consent endpoint example
+    //ea6cd5ab-9c40-4e27-b86b-8aaf86bae36a
+    //https://login.microsoftonline.com/common/adminconsent?client_id=39683401-a60c-4bc6-b744-6dbaedef498d&state=12345&redirect_uri=http://localhost:57245/
+    //https://login.microsoftonline.com/common/adminconsent?client_id=ea6cd5ab-9c40-4e27-b86b-8aaf86bae36a&state=12345&redirect_uri=http://localhost:57245/
 
 // Graph API scope used to obtain the access token to read user profile
 var graphAPIScopes = ["https://graph.microsoft.com/user.read"];
 myGraph.graphAPIScopes = graphAPIScopes;
 
 // Initialize application
-var userAgentApplication = new Msal.UserAgentApplication(msalconfig.clientID, null, loginCallback, {
+var userAgentApplication = new Msal.UserAgentApplication(msalconfig.clientID, msalconfig.authorityHostUrl, loginCallback, {
     redirectUri: msalconfig.redirectUri
 });
+
+var authContext = new AuthenticationContext(adalconfig);
+window.authContext = authContext;
+
+//var token = authContext.acquireToken(adalconfig.clientId, function (a, b, c) { return [a, b, c]; });
+ 
+    //alert(token());
 
 //Previous version of msal uses redirect url via a property
 if (userAgentApplication.redirectUri) {
@@ -64,7 +75,7 @@ myGraph.testCall = function callGraphApi2() {
                 });
     return result;
 }
-    /*
+/*
 POST https://graph.microsoft.com/beta/me/sendMail
 Content-type: application/json
 Content-length: 512
@@ -98,14 +109,14 @@ Content-length: 512
 
 
     /*
-    * Add Internal User.
+    * Send Email on behalf or current user
     * 
-    * @param {any} displayName - displayName
-    * @param {any} userPrincipalName - userPrincipalName
-    * @param {any} mailNickname - mailNickname
-    * @param {any} forceChangePasswordNextSignIn - forceChangePasswordNextSignIn
-    * @param {any} password - password
-    * @param {any} accountEnabled - accountEnabled
+    * @param {any} subject - subject
+    * @param {any} bodyContentType - "text" or "HTML"
+    * @param {any} bodyContent - bodyContent
+    * @param {any} toRecipientEmail - TO email address
+    * @param {any} ccRecipientEmail - CC email address
+    * @param {any} saveToSentItems - true or false
     */
 var sendMail = function sendMail(subject, bodyContentType, bodyContent, toRecipientEmail, ccRecipientEmail, saveToSentItems) {
     var body = {
@@ -132,7 +143,7 @@ var sendMail = function sendMail(subject, bodyContentType, bodyContent, toRecipi
         },
         "saveToSentItems": saveToSentItems
     };
-    return callGraphApi(msalconfig.graphMeEndpoint, "POST", body)
+    return callGraphApi(msalconfig.graphUsersEndpoint + "/1bb51a8d-9472-43e0-8166-213de80817da/sendMail", "POST", body)
             .then(function (response) {
                 var contentType = response.headers.get("content-type");
                 if ((response.status === 202)) {
@@ -163,6 +174,50 @@ var sendMail = function sendMail(subject, bodyContentType, bodyContent, toRecipi
 }
 myGraph.sendMail = sendMail;
 
+    /*
+* Send Email on behalf or current user
+* 
+* @param {any} subject - subject
+* @param {any} bodyContentType - "text" or "HTML"
+* @param {any} bodyContent - bodyContent
+* @param {any} toRecipientEmail - TO email address
+* @param {any} ccRecipientEmail - CC email address
+* @param {any} saveToSentItems - true or false
+*/
+var sendMailServer = function sendMailServer(subject, bodyContentType, bodyContent, toRecipientEmail, ccRecipientEmail, saveToSentItems, fromUserId) {
+    var body = {
+        "method": "sendMail",
+        "subject": subject,
+        "bodyContentType": bodyContentType,
+        "bodyContent": bodyContent,
+        "toRecipientEmail": toRecipientEmail,
+        "ccRecipientEmail": ccRecipientEmail,
+        "saveToSentItems": saveToSentItems,
+        "fromUserId": fromUserId
+    };
+    return callGraphClient(body)
+            .then(function (response) {
+                if ((response.status === 202)) {
+                    console.log("Email Sent Successfully");
+                    return Promise.resolve(true);  // no reponse data so return resolved promise
+                } else {
+                    return response.json()
+                        .then(function (data) {
+                                console.log("Send Mail Failed: " + data.error.message);
+                                return data;
+                        })
+                        .catch(function (error) {
+                            console.log("Send Mail json Failed: " + error.message);
+                            return error;
+                        });
+                }
+            })
+            .catch(function (error) {
+                console.log("sendMail Error: " + error.message);
+                return error;
+            });
+}
+myGraph.sendMailServer = sendMailServer;
 
 /*
 POST https://graph.microsoft.com/v1.0/users
@@ -340,7 +395,7 @@ Content-type: application/json
     myGraph.addGroupMember = addGroupMember;
 
      /*
-     * Get an access token then Call a Web API .
+     * Get app access token then Call a GraphApi.
      * 
      * @param {any} endpoint - Web API endpoint
      * @param {any} method - http method ["GET", "POST"]
@@ -348,7 +403,7 @@ Content-type: application/json
      * @param {object} headers - optional - new Headers()
      */
     var callGraphApi = function callGraphApi(endpoint, method, body, headers) {
-        return getToken()
+        return getAppToken()
         .then(function (token) {
             return new Promise((resolve, reject) => {
                 if (!headers) { headers = new Headers(); }
@@ -376,7 +431,44 @@ Content-type: application/json
     myGraph.callGraphApi = callGraphApi;
 
     /**
-    * login and get access token
+    * sends request to Node.js Azure Function which will aquire an id_Token and then call GraphApi and return the response
+    * @param {any} body - JSON body with parameters.  "method" : "getToken" or "sendMail"
+    *
+    * example body for getToken:
+    *   { "method": "getToken" }
+    *
+    * example body for sendMail:
+    *   {
+    *        "method": "sendMail",
+    *        "subject": "Meet for lunch?",
+    *        "bodyContentType": "Text",
+    *        "bodyContent": "The new cafeteria is open.",
+    *        "toRecipientEmail": "jbooker@midcoast.com",
+    *        "ccRecipientEmail": "josh@joshuabooker.com",
+    *        "saveToSentItems": "true",
+    *        "fromUserId": "amanda@joshbooker.com"
+    *   }
+    *
+    */
+    var callGraphClient = function callGraphClient(body) {
+        return new Promise((resolve, reject) => {
+            var options = {
+                url: msalconfig.graphClientEndpoint,
+                headers: { "Content-Type": "application/json" },
+                method: "POST",
+                data: JSON.stringify(body)
+            };
+            $.ajax(options)
+                .then(function (Response) {
+                    resolve(Response);
+                });
+        });
+    }
+    myGraph.callGraphClient = callGraphClient;
+
+
+    /**
+    * login and get user access token
     */
     var getToken = function getToken() {
         return new Promise((resolve, reject) => {
@@ -387,7 +479,7 @@ Content-type: application/json
                 userAgentApplication.loginRedirect(graphAPIScopes)
             } else {
                 //// In order to call the Graph API, an access token needs to be acquired.
-                //// Try to acquire the token used to Query Graph API silently first
+            //// Try to acquire the token used to Query Graph API silently first
                 userAgentApplication.acquireTokenSilent(graphAPIScopes)
                     .then(function (token) {
                         //After the access token is acquired, return the token
@@ -407,6 +499,64 @@ Content-type: application/json
         });
     }
     myGraph.getToken = getToken;
+
+    /**
+    * sends request to Node.js Azure Function to get id_token via adal-node method: adal.AuthenticationContext.acquireTokenWithClientCredentials()
+    */
+    var getAppToken = function getAppToken() {
+        return new Promise((resolve, reject) => {
+            var endpoint = msalconfig.graphClientEndpoint;
+            var options = {
+                url: endpoint,
+                headers: { "Content-Type": "application/json" },
+                method: "POST",
+                data: JSON.stringify({ method: "getToken" })
+            };
+            $.ajax(options)
+                .then(function (tokenRes) {
+                    var accesstoken = tokenRes.accessToken;
+                    resolve(accesstoken);
+                });
+        });
+    }
+    myGraph.getAppToken = getAppToken;
+
+    var getAppToken2 = function getAppToken2() {
+
+        return new Promise((resolve, reject) => {
+            var endpoint = msalconfig.graphClientEndpoint
+            //var endpoint = msalconfig.graphClientEndpoint;
+            //var method = "GET"
+            //var headers = new Headers();
+            //headers.append("Content-Type", 'text/plain');
+            //var options = {
+            //    headers: headers,
+            //    method: method
+            //    //,mode: 'cors'
+            //};
+            //fetch(endpoint, options)
+            //    .then(function (tokenRes) {
+            //        var accesstoken = tokenRes.accessToken;
+            //        resolve(accesstoken);
+            //    })
+            //    .catch(function (error) {
+            //        reject(error);
+            //    });
+            // cannot get fetch to work with cors - lets try ajax
+            var options = {
+                url: endpoint,
+                headers: {"Content-Type": "application/json"},
+                method: "POST",
+                data: JSON.stringify({ method: "getToken" })
+            };
+            $.ajax(options)
+                .then(function (tokenRes) {
+                    var accesstoken = tokenRes.accessToken;
+                    resolve(accesstoken);
+                });
+        });
+    }
+    myGraph.getAppToken2 = getAppToken2;
 
     /**
     * Show an error message in the page

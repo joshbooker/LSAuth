@@ -1,0 +1,15 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+</head>
+<body>
+    <div>login page for hidden iframe redirect.</div>
+    <script type="text/javascript">
+            if (window.location.hash && window.parent) {
+                window.parent.tokenResponse = window.location.hash;
+                window.parent.authContext.handleWindowCallback(window.location.hash);
+            }
+    </script>
+</body>
+</html>
